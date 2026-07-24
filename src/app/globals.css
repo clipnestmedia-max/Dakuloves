@@ -1,0 +1,145 @@
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800&family=Cinzel+Decorative:wght@700&family=Cormorant+Garamond:wght@500;600;700&family=Montserrat:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Serif+Devanagari:wght@600;700&family=Playfair+Display:wght@600;700;800&family=Poppins:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --panel: #171317;
+  --panel-2: #21191d;
+  --line: rgba(245, 232, 203, 0.16);
+  --text: #f8ead0;
+  --muted: #b9a98a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  overflow-x: hidden;
+  background: #0e0b0d;
+  color: var(--text);
+}
+
+body {
+  font-family: Poppins, Montserrat, system-ui, sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #f2c34d;
+  outline-offset: 2px;
+}
+
+.editor-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 360px) minmax(0, 1fr) minmax(250px, 290px);
+  grid-template-rows: 56px minmax(0, 1fr) 58px;
+  min-height: 100vh;
+}
+
+@media (max-width: 980px) {
+  .editor-grid {
+    display: flex;
+    min-height: 100vh;
+    flex-direction: column;
+  }
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field label,
+.label {
+  color: #e8d4a8;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.input {
+  width: 100%;
+  border: 1px solid rgba(230, 201, 139, 0.23);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.055);
+  color: #fff7e8;
+  padding: 9px 10px;
+}
+
+.input[type="color"] {
+  min-height: 40px;
+  padding: 3px;
+}
+
+.btn {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid rgba(230, 201, 139, 0.25);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.075);
+  color: #f8ead0;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.btn:hover {
+  background: rgba(242, 195, 77, 0.13);
+}
+
+.btn-primary {
+  border-color: rgba(242, 195, 77, 0.75);
+  background: linear-gradient(180deg, #f2c34d, #b97d19);
+  color: #1f0b00;
+}
+
+.btn-danger {
+  border-color: rgba(255, 114, 114, 0.4);
+  color: #ffd2d2;
+}
+
+.panel {
+  border-color: var(--line);
+  background: linear-gradient(180deg, rgba(33, 25, 29, 0.98), rgba(17, 12, 15, 0.98));
+}
+
+.scroll-thin {
+  scrollbar-color: rgba(230, 201, 139, 0.45) transparent;
+  scrollbar-width: thin;
+}
+
+@media print {
+  @page {
+    margin: 0;
+  }
+
+  body {
+    background: white;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: flex !important;
+  }
+}
