@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const isGithubPages = process.env.GITHUB_ACTIONS === "true";
+const isGithubPages = process.env.GITHUB_ACTIONS === "true" && process.env.CUSTOM_DOMAIN !== "true";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
