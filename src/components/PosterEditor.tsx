@@ -8,6 +8,7 @@ import {
   ArrowUp,
   Download,
   Eye,
+  EyeOff,
   FileArchive,
   FileDown,
   Image as ImageIcon,
@@ -18,6 +19,7 @@ import {
   Printer,
   Redo2,
   RefreshCw,
+  Replace,
   Save,
   Settings,
   Trash2,
@@ -46,9 +48,17 @@ export function PosterEditor() {
   const issues = useMemo(() => validateProject(project), [project]);
 
   useEffect(() => {
+    if (!dirty) return;
+    const timer = window.setTimeout(() => {
+      void saveDraft(project).then(markClean);
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [dirty, markClean, project]);
+
+  useEffect(() => {
     const timer = window.setInterval(() => {
       if (dirty) void saveDraft(project).then(markClean);
-    }, 10000);
+    }, 30000);
     return () => window.clearInterval(timer);
   }, [dirty, markClean, project]);
 
@@ -189,7 +199,7 @@ function EditorToolbar(props: {
       <button className="btn" onClick={props.onBulk}><FileArchive size={16} /> Bulk</button>
       <button className="btn" onClick={props.onPreview}><Eye size={16} /> Preview</button>
       <button className="btn btn-danger" onClick={props.onReset}><RefreshCw size={16} /> Reset</button>
-      <select className="input ml-auto max-w-36" onChange={(e) => e.target.value && props.onExport(e.target.value as "png" | "jpg" | "pdf")} defaultValue="" aria-label="Export menu">
+      <select className="input ml-auto max-w-36" onChange={(e) => { if (e.target.value) props.onExport(e.target.value as "png" | "jpg" | "pdf"); e.target.value = ""; }} defaultValue="" aria-label="Export menu">
         <option value="" disabled>Export</option>
         <option value="png">PNG</option>
         <option value="jpg">JPG</option>
@@ -248,7 +258,12 @@ function PosterCanvas({ zoom, guides, className, printMode = false, exportScale 
   async function drop(event: React.DragEvent<HTMLDivElement>) {
     event.preventDefault();
     const file = event.dataTransfer.files[0];
-    if (file) setCandidatePhoto(await fileToAsset(file));
+    if (!file) return;
+    try {
+      setCandidatePhoto(await fileToAsset(file));
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Upload failed.");
+    }
   }
 
   return (
@@ -316,6 +331,7 @@ function PhotoPanel() {
     if (!file) return;
     try {
       setCandidatePhoto(await fileToAsset(file));
+      event.target.value = "";
     } catch (error) {
       alert(error instanceof Error ? error.message : "Upload failed.");
     }
@@ -375,31 +391,64 @@ function EventPanel() {
 }
 
 function BrandingPanel() {
-  const { project, setLogo, addLogo, removeLogo } = useEditorStore();
+  const { project, setLogo, addLogo, updateLogo, removeLogo, moveLogo, restoreOfficialLogos, updateProject } = useEditorStore();
   return (
     <>
       <Section title="Organisation Logos">
+        <button className="btn" onClick={restoreOfficialLogos}><RefreshCw size={16} /> Restore official logos</button>
         <LogoUpload label="Main organisation logo" onUpload={(logo) => setLogo("mainLogo", logo)} />
         <LogoUpload label="Production logo" onUpload={(logo) => setLogo("productionLogo", logo)} />
         <LogoUpload label="Presenter logo" onUpload={(logo) => setLogo("presenterLogo", logo)} />
-        {(["mainLogo", "productionLogo", "presenterLogo"] as const).map((slot) => project.branding[slot] && <LogoRow key={slot} logo={project.branding[slot]} onDelete={() => setLogo(slot, undefined)} />)}
+        {(["mainLogo", "productionLogo", "presenterLogo"] as const).map((slot) => project.branding[slot] && (
+          <LogoRow
+            key={slot}
+            logo={project.branding[slot]}
+            onReplace={(logo) => setLogo(slot, logo)}
+            onUpdate={(updater) => updateLogo(slot, project.branding[slot]!.id, updater)}
+            onDelete={() => setLogo(slot, undefined)}
+          />
+        ))}
       </Section>
       <Section title="Partner Logos">
         <LogoUpload label="Add partner logo" onUpload={(logo) => addLogo("partnerLogos", logo)} />
-        {project.branding.partnerLogos.map((logo) => <LogoRow key={logo.id} logo={logo} onDelete={() => removeLogo("partnerLogos", logo.id)} />)}
+        {project.branding.partnerLogos.map((logo, index) => (
+          <LogoRow
+            key={logo.id}
+            logo={logo}
+            onReplace={(replacement) => updateLogo("partnerLogos", logo.id, () => replacement)}
+            onUpdate={(updater) => updateLogo("partnerLogos", logo.id, updater)}
+            onDelete={() => removeLogo("partnerLogos", logo.id)}
+            onMoveUp={index > 0 ? () => moveLogo("partnerLogos", logo.id, -1) : undefined}
+            onMoveDown={index < project.branding.partnerLogos.length - 1 ? () => moveLogo("partnerLogos", logo.id, 1) : undefined}
+          />
+        ))}
+      </Section>
+      <Section title="Logo Layout">
+        <Slider label="Top logo height" value={project.branding.maxLogoHeight} min={28} max={150} step={1} onChange={(v) => updateProject((p) => ({ ...p, branding: { ...p.branding, maxLogoHeight: v } }))} />
+        <Slider label="Logo gap" value={project.branding.logoGap} min={0} max={80} step={1} onChange={(v) => updateProject((p) => ({ ...p, branding: { ...p.branding, logoGap: v } }))} />
       </Section>
     </>
   );
 }
 
 function SponsorPanel() {
-  const { project, addLogo, removeLogo } = useEditorStore();
+  const { project, addLogo, updateLogo, removeLogo, moveLogo } = useEditorStore();
   return (
     <Section title="Sponsors and Media">
       {(["sponsorLogos", "mediaPartnerLogos", "certificationLogos"] as const).map((slot) => (
         <div key={slot} className="grid gap-2 border-b border-white/10 pb-3">
           <LogoUpload label={`Add ${titleCase(slot)}`} onUpload={(logo) => addLogo(slot, logo)} />
-          {project.branding[slot].map((logo) => <LogoRow key={logo.id} logo={logo} onDelete={() => removeLogo(slot, logo.id)} />)}
+          {project.branding[slot].map((logo, index) => (
+            <LogoRow
+              key={logo.id}
+              logo={logo}
+              onReplace={(replacement) => updateLogo(slot, logo.id, () => replacement)}
+              onUpdate={(updater) => updateLogo(slot, logo.id, updater)}
+              onDelete={() => removeLogo(slot, logo.id)}
+              onMoveUp={index > 0 ? () => moveLogo(slot, logo.id, -1) : undefined}
+              onMoveDown={index < project.branding[slot].length - 1 ? () => moveLogo(slot, logo.id, 1) : undefined}
+            />
+          ))}
         </div>
       ))}
     </Section>
@@ -412,6 +461,7 @@ function LogoUpload({ label, onUpload }: { label: string; onUpload: (logo: LogoA
     if (!file) return;
     try {
       onUpload(await fileToLogo(file));
+      event.target.value = "";
     } catch (error) {
       alert(error instanceof Error ? error.message : "Logo upload failed.");
     }
@@ -419,8 +469,51 @@ function LogoUpload({ label, onUpload }: { label: string; onUpload: (logo: LogoA
   return <label className="btn w-full"><ImageIcon size={16} /> {label}<input className="hidden" type="file" accept="image/*" onChange={upload} /></label>;
 }
 
-function LogoRow({ logo, onDelete }: { logo: LogoAsset; onDelete: () => void }) {
-  return <div className="flex items-center justify-between gap-2 rounded-md bg-white/5 px-2 py-2 text-xs"><span className="truncate">{logo.name}</span><button className="btn btn-danger !min-h-7 !px-2" onClick={onDelete}><Trash2 size={14} /></button></div>;
+function LogoRow({
+  logo,
+  onReplace,
+  onUpdate,
+  onDelete,
+  onMoveUp,
+  onMoveDown
+}: {
+  logo: LogoAsset;
+  onReplace: (logo: LogoAsset) => void;
+  onUpdate: (updater: (logo: LogoAsset) => LogoAsset) => void;
+  onDelete: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+}) {
+  async function replace(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      onReplace(await fileToLogo(file));
+      event.target.value = "";
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Logo replacement failed.");
+    }
+  }
+
+  return (
+    <div className="grid gap-2 rounded-md bg-white/5 p-2 text-xs">
+      <div className="grid grid-cols-[42px_1fr_auto_auto_auto_auto_auto] items-center gap-2">
+        <img src={logo.dataUrl} alt="" className="h-10 w-10 rounded border border-white/10 bg-black object-contain" />
+        <span className="truncate" title={logo.name}>{logo.name}</span>
+        <button className="btn !min-h-7 !px-2" onClick={() => onUpdate((item) => ({ ...item, hidden: !item.hidden }))} title={logo.hidden ? "Show logo" : "Hide logo"}>{logo.hidden ? <EyeOff size={14} /> : <Eye size={14} />}</button>
+        <label className="btn !min-h-7 !px-2" title="Replace logo"><Replace size={14} /><input className="hidden" type="file" accept="image/*" onChange={replace} /></label>
+        <button className="btn !min-h-7 !px-2" disabled={!onMoveUp} onClick={onMoveUp}><ArrowUp size={14} /></button>
+        <button className="btn !min-h-7 !px-2" disabled={!onMoveDown} onClick={onMoveDown}><ArrowDown size={14} /></button>
+        <button className="btn btn-danger !min-h-7 !px-2" onClick={onDelete}><Trash2 size={14} /></button>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-3">
+        <Toggle label="Box" checked={logo.backgroundBox} onChange={(value) => onUpdate((item) => ({ ...item, backgroundBox: value }))} />
+        <Toggle label="Grayscale" checked={logo.grayscale} onChange={(value) => onUpdate((item) => ({ ...item, grayscale: value, monochrome: value ? false : item.monochrome }))} />
+        <Toggle label="Monochrome" checked={logo.monochrome} onChange={(value) => onUpdate((item) => ({ ...item, monochrome: value, grayscale: value ? false : item.grayscale }))} />
+      </div>
+      <Slider label="Opacity" value={logo.opacity} min={0} max={1} step={0.01} onChange={(value) => onUpdate((item) => ({ ...item, opacity: value }))} />
+    </div>
+  );
 }
 
 function ContactPanel() {

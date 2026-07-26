@@ -19,6 +19,11 @@ async function imageFor(src: string): Promise<HTMLImageElement> {
   return img;
 }
 
+async function loadLogoImages(logos: LogoAsset[]): Promise<Array<{ logo: LogoAsset; img: HTMLImageElement }>> {
+  const loaded = await Promise.allSettled(logos.map(async (logo) => ({ logo, img: await imageFor(logo.dataUrl) })));
+  return loaded.flatMap((result) => (result.status === "fulfilled" ? [result.value] : []));
+}
+
 export async function ensureFonts(project: PosterProject): Promise<void> {
   if ("fonts" in document) {
     await document.fonts.ready;
@@ -251,43 +256,104 @@ function drawLetterSpaced(ctx: CanvasRenderingContext2D, text: string, x: number
   });
 }
 
-async function drawLogos(ctx: CanvasRenderingContext2D, project: PosterProject): Promise<void> {
+async function drawLogoStrip(
+  ctx: CanvasRenderingContext2D,
+  logos: LogoAsset[],
+  centerX: number,
+  centerY: number,
+  maxWidth: number,
+  maxHeight: number,
+  gap: number,
+  fallback?: () => void
+): Promise<void> {
+  const visibleLogos = logos.filter((logo) => !logo.hidden);
+  if (!visibleLogos.length) {
+    fallback?.();
+    return;
+  }
+
+  const loaded = await loadLogoImages(visibleLogos);
+  if (!loaded.length) {
+    fallback?.();
+    return;
+  }
+
+  let height = maxHeight;
+  let sizes = loaded.map(({ img }) => ({ width: (img.naturalWidth / img.naturalHeight) * height, height }));
+  let total = sizes.reduce((sum, size) => sum + size.width, 0) + gap * (loaded.length - 1);
+  if (total > maxWidth) {
+    height *= maxWidth / total;
+    sizes = loaded.map(({ img }) => ({ width: (img.naturalWidth / img.naturalHeight) * height, height }));
+    total = sizes.reduce((sum, size) => sum + size.width, 0) + gap * (loaded.length - 1);
+  }
+
+  let x = centerX - total / 2;
+  loaded.forEach(({ logo, img }, index) => {
+    const { width, height: logoHeight } = sizes[index];
+    const y = centerY - logoHeight / 2;
+    ctx.save();
+    ctx.globalAlpha = logo.opacity;
+    if (logo.backgroundBox) {
+      roundedRect(ctx, x - 10, y - 8, width + 20, logoHeight + 16, 12);
+      ctx.fillStyle = "rgba(245,232,203,.92)";
+      ctx.fill();
+    }
+    ctx.filter = logo.grayscale ? "grayscale(1)" : logo.monochrome ? "grayscale(1) contrast(2)" : "none";
+    ctx.drawImage(img, x, y, width, logoHeight);
+    ctx.restore();
+    x += width + gap;
+  });
+}
+
+async function drawTopLogos(ctx: CanvasRenderingContext2D, project: PosterProject): Promise<void> {
   const logos = [
     project.branding.mainLogo,
     project.branding.productionLogo,
     project.branding.presenterLogo,
     ...project.branding.partnerLogos
   ].filter((logo): logo is LogoAsset => Boolean(logo && !logo.hidden));
-  if (!logos.length) {
-    ctx.save();
-    ctx.fillStyle = "rgba(245,232,203,.82)";
-    ctx.font = "700 30px Montserrat";
-    ctx.textAlign = "center";
-    ctx.fillText(project.event.organisationName, project.size.width / 2, project.size.height * 0.13);
-    ctx.restore();
-    return;
-  }
-  const loaded = await Promise.all(logos.map((logo) => imageFor(logo.dataUrl)));
-  const maxH = project.branding.maxLogoHeight;
-  const widths = loaded.map((img) => (img.naturalWidth / img.naturalHeight) * maxH);
-  const total = widths.reduce((sum, width) => sum + width, 0) + project.branding.logoGap * (loaded.length - 1);
-  let x = project.size.width / 2 - total / 2;
-  const y = project.size.height * 0.115;
-  loaded.forEach((img, index) => {
-    const logo = logos[index];
-    const w = widths[index];
-    ctx.save();
-    ctx.globalAlpha = logo.opacity;
-    if (logo.backgroundBox) {
-      roundedRect(ctx, x - 10, y - maxH / 2 - 8, w + 20, maxH + 16, 12);
-      ctx.fillStyle = "rgba(245,232,203,.92)";
-      ctx.fill();
+
+  await drawLogoStrip(
+    ctx,
+    logos,
+    project.size.width / 2,
+    project.size.height * 0.115,
+    project.size.width * 0.72,
+    project.branding.maxLogoHeight,
+    project.branding.logoGap,
+    () => {
+      ctx.save();
+      ctx.fillStyle = "rgba(245,232,203,.82)";
+      ctx.font = "700 30px Montserrat";
+      ctx.textAlign = "center";
+      ctx.fillText(project.event.organisationName, project.size.width / 2, project.size.height * 0.13);
+      ctx.restore();
     }
-    ctx.filter = logo.grayscale ? "grayscale(1)" : logo.monochrome ? "grayscale(1) contrast(2)" : "none";
-    ctx.drawImage(img, x, y - maxH / 2, w, maxH);
-    ctx.restore();
-    x += w + project.branding.logoGap;
-  });
+  );
+}
+
+async function drawSponsorLogos(ctx: CanvasRenderingContext2D, project: PosterProject): Promise<void> {
+  const logos = [
+    ...project.branding.sponsorLogos,
+    ...project.branding.mediaPartnerLogos,
+    ...project.branding.certificationLogos
+  ].filter((logo) => !logo.hidden);
+
+  if (!logos.length) return;
+
+  const { width, height } = project.size;
+  const centerX = width / 2;
+  const centerY = height * 0.817;
+
+  ctx.save();
+  ctx.globalAlpha = 0.74;
+  ctx.fillStyle = "#F2C34D";
+  ctx.font = "700 15px Montserrat";
+  ctx.textAlign = "center";
+  ctx.fillText("SPONSORS & PARTNERS", centerX, centerY - 36);
+  ctx.restore();
+
+  await drawLogoStrip(ctx, logos, centerX, centerY, width * 0.76, Math.min(48, project.branding.maxLogoHeight * 0.7), Math.max(12, project.branding.logoGap * 0.62));
 }
 
 function drawDecorations(ctx: CanvasRenderingContext2D, project: PosterProject): void {
@@ -420,7 +486,7 @@ export async function renderPosterToCanvas(canvas: HTMLCanvasElement, project: P
   await ensureFonts(project);
   drawCurtain(ctx, project, scale);
   drawDecorations(ctx, project);
-  if (visible(project, "logos")) await drawLogos(ctx, project);
+  if (visible(project, "logos")) await drawTopLogos(ctx, project);
   if (visible(project, "eventTitle")) drawText(ctx, project.textStyles.eventTitle, project.event.title, 30);
   if (visible(project, "eventYear")) drawText(ctx, project.textStyles.eventYear, project.event.year, 24);
   if (visible(project, "candidatePhoto")) await drawCandidatePhoto(ctx, project);
@@ -428,6 +494,7 @@ export async function renderPosterToCanvas(canvas: HTMLCanvasElement, project: P
   if (visible(project, "congratulations")) drawText(ctx, project.textStyles.congratulations, project.candidate.congratulationsHeading || project.candidate.status, 18);
   if (visible(project, "candidateName")) drawText(ctx, project.textStyles.candidateName, project.candidate.fullName, 28);
   if (visible(project, "candidateCategory")) drawText(ctx, project.textStyles.candidateCategory, project.candidate.category || project.candidate.title || project.candidate.status, 18);
+  if (visible(project, "sponsors")) await drawSponsorLogos(ctx, project);
   if (visible(project, "contact")) drawText(ctx, project.textStyles.phone, phoneText(project), 14);
   if (visible(project, "website")) drawText(ctx, project.textStyles.website, project.contact.website, 14);
   if (visible(project, "footer")) drawText(ctx, project.textStyles.footer, project.event.footerNote, 12);

@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { applySize, applyTemplate, createDefaultProject } from "@/lib/templates";
+import { applySize, applyTemplate, createDefaultProject, createOfficialLogos, ensureOfficialLogos } from "@/lib/templates";
 import type { AssetRef, LayerId, LogoAsset, PosterProject, PosterSizeId, TemplateId } from "@/lib/types";
 
 interface HistoryEntry {
@@ -29,7 +29,10 @@ interface EditorState {
   setCandidatePhoto: (asset?: AssetRef) => void;
   setLogo: (slot: "mainLogo" | "productionLogo" | "presenterLogo", logo?: LogoAsset) => void;
   addLogo: (slot: "partnerLogos" | "sponsorLogos" | "mediaPartnerLogos" | "certificationLogos", logo: LogoAsset) => void;
+  updateLogo: (slot: "mainLogo" | "productionLogo" | "presenterLogo" | "partnerLogos" | "sponsorLogos" | "mediaPartnerLogos" | "certificationLogos", id: string, updater: (logo: LogoAsset) => LogoAsset) => void;
   removeLogo: (slot: "partnerLogos" | "sponsorLogos" | "mediaPartnerLogos" | "certificationLogos", id: string) => void;
+  moveLogo: (slot: "partnerLogos" | "sponsorLogos" | "mediaPartnerLogos" | "certificationLogos", id: string, direction: -1 | 1) => void;
+  restoreOfficialLogos: () => void;
   toggleLayer: (id: LayerId) => void;
   lockLayer: (id: LayerId) => void;
   moveLayer: (id: LayerId, direction: -1 | 1) => void;
@@ -38,7 +41,7 @@ interface EditorState {
   markClean: () => void;
 }
 
-const initial = createDefaultProject();
+const initial = ensureOfficialLogos(createDefaultProject());
 
 export const useEditorStore = create<EditorState>((set, get) => ({
   project: initial,
@@ -55,8 +58,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   selectLayer: (selectedLayer) => set({ selectedLayer }),
   setProject: (project, push = true) => {
     const state = get();
+    const nextProject = ensureOfficialLogos(project);
     set({
-      project: { ...project, updatedAt: new Date().toISOString() },
+      project: { ...nextProject, updatedAt: new Date().toISOString() },
       past: push ? [...state.past.slice(-40), { project: state.project }] : state.past,
       future: push ? [] : state.future,
       dirty: true
@@ -69,7 +73,26 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setCandidatePhoto: (asset) => get().updateProject((project) => ({ ...project, candidatePhoto: asset })),
   setLogo: (slot, logo) => get().updateProject((project) => ({ ...project, branding: { ...project.branding, [slot]: logo } })),
   addLogo: (slot, logo) => get().updateProject((project) => ({ ...project, branding: { ...project.branding, [slot]: [...project.branding[slot], logo] } })),
+  updateLogo: (slot, id, updater) =>
+    get().updateProject((project) => {
+      const value = project.branding[slot];
+      if (Array.isArray(value)) {
+        return { ...project, branding: { ...project.branding, [slot]: value.map((logo) => (logo.id === id ? updater(logo) : logo)) } };
+      }
+      return value?.id === id ? { ...project, branding: { ...project.branding, [slot]: updater(value) } } : project;
+    }),
   removeLogo: (slot, id) => get().updateProject((project) => ({ ...project, branding: { ...project.branding, [slot]: project.branding[slot].filter((logo) => logo.id !== id) } })),
+  moveLogo: (slot, id, direction) =>
+    get().updateProject((project) => {
+      const logos = [...project.branding[slot]];
+      const index = logos.findIndex((logo) => logo.id === id);
+      const next = index + direction;
+      if (index < 0 || next < 0 || next >= logos.length) return project;
+      const [logo] = logos.splice(index, 1);
+      logos.splice(next, 0, logo);
+      return { ...project, branding: { ...project.branding, [slot]: logos } };
+    }),
+  restoreOfficialLogos: () => get().updateProject((project) => ({ ...project, branding: { ...project.branding, ...createOfficialLogos() } })),
   toggleLayer: (id) => get().updateProject((project) => ({ ...project, layers: project.layers.map((layer) => (layer.id === id ? { ...layer, visible: !layer.visible } : layer)) })),
   lockLayer: (id) => get().updateProject((project) => ({ ...project, layers: project.layers.map((layer) => (layer.id === id ? { ...layer, locked: !layer.locked } : layer)) })),
   moveLayer: (id, direction) =>

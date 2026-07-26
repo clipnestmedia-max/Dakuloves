@@ -1,4 +1,4 @@
-import type { BackgroundSettings, LayerSettings, PosterProject, PosterSize, PosterSizeId, TemplateId, TextStyle } from "./types";
+import type { BackgroundSettings, LayerSettings, LogoAsset, PosterProject, PosterSize, PosterSizeId, TemplateId, TextStyle } from "./types";
 
 export const posterSizes: PosterSize[] = [
   { id: "poster-3-4", label: "1080 x 1440 Poster", width: 1080, height: 1440 },
@@ -40,6 +40,68 @@ export const fontOptions = [
   "Noto Sans Devanagari",
   "Noto Serif Devanagari"
 ];
+
+const officialLogos: Record<"mainLogo" | "productionLogo" | "presenterLogo", LogoAsset> = {
+  mainLogo: {
+    id: "official-dakuloves-production",
+    name: "Dakuloves Production",
+    type: "image/png",
+    dataUrl: "/assets/branding/dakuloves-production.png",
+    width: 1024,
+    height: 1024,
+    hidden: false,
+    locked: false,
+    opacity: 1,
+    grayscale: false,
+    monochrome: false,
+    backgroundBox: false
+  },
+  productionLogo: {
+    id: "official-unfiltered-mithila",
+    name: "Unfiltered Mithila",
+    type: "image/jpeg",
+    dataUrl: "/assets/branding/unfiltered-mithila.jpg",
+    width: 640,
+    height: 640,
+    hidden: false,
+    locked: false,
+    opacity: 1,
+    grayscale: false,
+    monochrome: false,
+    backgroundBox: false
+  },
+  presenterLogo: {
+    id: "official-bollywood-umang-production",
+    name: "Bollywood Umang Production",
+    type: "image/png",
+    dataUrl: "/assets/branding/bollywood-umang-production.png",
+    width: 1563,
+    height: 1563,
+    hidden: false,
+    locked: false,
+    opacity: 1,
+    grayscale: false,
+    monochrome: false,
+    backgroundBox: false
+  }
+};
+
+export function createOfficialLogos(): Pick<PosterProject["branding"], "mainLogo" | "productionLogo" | "presenterLogo"> {
+  return structuredClone(officialLogos);
+}
+
+export function ensureOfficialLogos(project: PosterProject): PosterProject {
+  const logos = createOfficialLogos();
+  return {
+    ...project,
+    branding: {
+      ...project.branding,
+      mainLogo: project.branding.mainLogo ?? logos.mainLogo,
+      productionLogo: project.branding.productionLogo ?? logos.productionLogo,
+      presenterLogo: project.branding.presenterLogo ?? logos.presenterLogo
+    }
+  };
+}
 
 export function layerDefaults(): LayerSettings[] {
   return [
@@ -121,9 +183,9 @@ function textStylesFor(id: TemplateId, size: PosterSize): Record<string, TextSty
   const light = isCream ? "#4d1600" : "#F5E8CB";
   const gold = isCream ? "#8b5b0d" : "#F2C34D";
   return {
-    presentedBy: textStyle({ fontFamily: "Montserrat", fontSize: 23 * scaleY, fontWeight: 600, color: gold, width: 620, x: size.width / 2, y: 96 * scaleY, transform: "uppercase" }),
-    eventTitle: textStyle({ fontFamily: "Cinzel Decorative", fontSize: 66 * scaleY, fontWeight: 700, color: light, width: size.width * 0.82, x: size.width / 2, y: 210 * scaleY, glow: true }),
-    eventYear: textStyle({ fontFamily: "Cinzel", fontSize: 60 * scaleY, fontWeight: 800, color: gold, width: 500, x: size.width / 2, y: 330 * scaleY }),
+    presentedBy: textStyle({ fontFamily: "Montserrat", fontSize: 23 * scaleY, fontWeight: 600, color: gold, width: 620, x: size.width / 2, y: 72 * scaleY, transform: "uppercase" }),
+    eventTitle: textStyle({ fontFamily: "Cinzel Decorative", fontSize: 66 * scaleY, fontWeight: 700, color: light, width: size.width * 0.82, x: size.width / 2, y: 246 * scaleY, glow: true }),
+    eventYear: textStyle({ fontFamily: "Cinzel", fontSize: 60 * scaleY, fontWeight: 800, color: gold, width: 500, x: size.width / 2, y: 356 * scaleY }),
     congratulations: textStyle({ fontFamily: "Montserrat", fontSize: 36 * scaleY, fontWeight: 700, color: gold, width: 780, x: size.width / 2, y: 920 * scaleY, transform: "uppercase", letterSpacing: 3 }),
     candidateName: textStyle({ fontFamily: "Playfair Display", fontSize: 78 * scaleY, fontWeight: 800, color: light, width: size.width * 0.86, x: size.width / 2, y: 1012 * scaleY, glow: true }),
     candidateCategory: textStyle({ fontFamily: "Cormorant Garamond", fontSize: 40 * scaleY, fontWeight: 700, color: gold, width: size.width * 0.78, x: size.width / 2, y: 1115 * scaleY }),
@@ -224,6 +286,7 @@ export function createDefaultProject(templateId: TemplateId = "royal-curtain", s
       shape: "rounded"
     },
     branding: {
+      ...createOfficialLogos(),
       partnerLogos: [],
       sponsorLogos: [],
       mediaPartnerLogos: [],
