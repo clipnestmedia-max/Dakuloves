@@ -183,9 +183,9 @@ function textStylesFor(id: TemplateId, size: PosterSize): Record<string, TextSty
   const light = isCream ? "#4d1600" : "#F5E8CB";
   const gold = isCream ? "#8b5b0d" : "#F2C34D";
   return {
-    presentedBy: textStyle({ fontFamily: "Montserrat", fontSize: 23 * scaleY, fontWeight: 600, color: gold, width: 620, x: size.width / 2, y: 72 * scaleY, transform: "uppercase" }),
-    eventTitle: textStyle({ fontFamily: "Cinzel Decorative", fontSize: 66 * scaleY, fontWeight: 700, color: light, width: size.width * 0.82, x: size.width / 2, y: 246 * scaleY, glow: true }),
-    eventYear: textStyle({ fontFamily: "Cinzel", fontSize: 60 * scaleY, fontWeight: 800, color: gold, width: 500, x: size.width / 2, y: 356 * scaleY }),
+    presentedBy: textStyle({ fontFamily: "Montserrat", fontSize: 23 * scaleY, fontWeight: 600, color: gold, width: 620, x: size.width / 2, y: 116 * scaleY, transform: "uppercase" }),
+    eventTitle: textStyle({ fontFamily: "Cinzel Decorative", fontSize: 66 * scaleY, fontWeight: 700, color: light, width: size.width * 0.82, x: size.width / 2, y: 292 * scaleY, glow: true }),
+    eventYear: textStyle({ fontFamily: "Cinzel", fontSize: 60 * scaleY, fontWeight: 800, color: gold, width: 500, x: size.width / 2, y: 402 * scaleY }),
     congratulations: textStyle({ fontFamily: "Montserrat", fontSize: 36 * scaleY, fontWeight: 700, color: gold, width: 780, x: size.width / 2, y: 920 * scaleY, transform: "uppercase", letterSpacing: 3 }),
     candidateName: textStyle({ fontFamily: "Playfair Display", fontSize: 78 * scaleY, fontWeight: 800, color: light, width: size.width * 0.86, x: size.width / 2, y: 1012 * scaleY, glow: true }),
     candidateCategory: textStyle({ fontFamily: "Cormorant Garamond", fontSize: 40 * scaleY, fontWeight: 700, color: gold, width: size.width * 0.78, x: size.width / 2, y: 1115 * scaleY }),
