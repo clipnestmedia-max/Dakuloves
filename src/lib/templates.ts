@@ -183,15 +183,15 @@ function textStylesFor(id: TemplateId, size: PosterSize): Record<string, TextSty
   const light = isCream ? "#4d1600" : "#F5E8CB";
   const gold = isCream ? "#8b5b0d" : "#F2C34D";
   return {
-    presentedBy: textStyle({ fontFamily: "Montserrat", fontSize: 23 * scaleY, fontWeight: 600, color: gold, width: 620, x: size.width / 2, y: 116 * scaleY, transform: "uppercase" }),
-    eventTitle: textStyle({ fontFamily: "Cinzel Decorative", fontSize: 66 * scaleY, fontWeight: 700, color: light, width: size.width * 0.82, x: size.width / 2, y: 292 * scaleY, glow: true }),
-    eventYear: textStyle({ fontFamily: "Cinzel", fontSize: 60 * scaleY, fontWeight: 800, color: gold, width: 500, x: size.width / 2, y: 402 * scaleY }),
-    congratulations: textStyle({ fontFamily: "Montserrat", fontSize: 36 * scaleY, fontWeight: 700, color: gold, width: 780, x: size.width / 2, y: 920 * scaleY, transform: "uppercase", letterSpacing: 3 }),
-    candidateName: textStyle({ fontFamily: "Playfair Display", fontSize: 78 * scaleY, fontWeight: 800, color: light, width: size.width * 0.86, x: size.width / 2, y: 1012 * scaleY, glow: true }),
-    candidateCategory: textStyle({ fontFamily: "Cormorant Garamond", fontSize: 40 * scaleY, fontWeight: 700, color: gold, width: size.width * 0.78, x: size.width / 2, y: 1115 * scaleY }),
-    phone: textStyle({ fontFamily: "Montserrat", fontSize: 27 * scaleY, fontWeight: 600, color: light, width: size.width * 0.78, x: size.width / 2, y: 1240 * scaleY }),
-    website: textStyle({ fontFamily: "Montserrat", fontSize: 27 * scaleY, fontWeight: 600, color: gold, width: size.width * 0.78, x: size.width / 2, y: 1290 * scaleY }),
-    footer: textStyle({ fontFamily: "Montserrat", fontSize: 20 * scaleY, fontWeight: 500, color: light, width: size.width * 0.78, x: size.width / 2, y: 1360 * scaleY, opacity: 0.78 })
+    presentedBy: textStyle({ fontFamily: "Montserrat", fontSize: 20 * scaleY, fontWeight: 600, color: gold, width: 620, x: size.width / 2, y: 60 * scaleY, transform: "uppercase", letterSpacing: 2 }),
+    eventTitle: textStyle({ fontFamily: "Cinzel Decorative", fontSize: 56 * scaleY, fontWeight: 700, color: light, width: size.width * 0.82, x: size.width / 2, y: 222 * scaleY, glow: true, lineHeight: 0.96 }),
+    eventYear: textStyle({ fontFamily: "Montserrat", fontSize: 28 * scaleY, fontWeight: 600, color: gold, width: 500, x: size.width / 2, y: 286 * scaleY, transform: "uppercase", letterSpacing: 1.5 }),
+    congratulations: textStyle({ fontFamily: "Montserrat", fontSize: 34 * scaleY, fontWeight: 500, color: gold, width: 780, x: size.width / 2, y: 1036 * scaleY, transform: "uppercase", letterSpacing: 4, shadow: false }),
+    candidateName: textStyle({ fontFamily: "Playfair Display", fontSize: 68 * scaleY, fontWeight: 800, color: light, width: size.width * 0.84, x: size.width / 2, y: 1188 * scaleY, transform: "uppercase", glow: true, letterSpacing: 1 }),
+    candidateCategory: textStyle({ fontFamily: "Montserrat", fontSize: 34 * scaleY, fontWeight: 700, color: gold, width: size.width * 0.78, x: size.width / 2, y: 1288 * scaleY, transform: "uppercase", letterSpacing: 1 }),
+    phone: textStyle({ fontFamily: "Montserrat", fontSize: 22 * scaleY, fontWeight: 600, color: light, width: size.width * 0.78, x: size.width / 2, y: 1360 * scaleY }),
+    website: textStyle({ fontFamily: "Montserrat", fontSize: 22 * scaleY, fontWeight: 600, color: gold, width: size.width * 0.78, x: size.width / 2, y: 1398 * scaleY, visible: false }),
+    footer: textStyle({ fontFamily: "Montserrat", fontSize: 18 * scaleY, fontWeight: 500, color: light, width: size.width * 0.78, x: size.width / 2, y: 1418 * scaleY, opacity: 0.68, visible: false })
   };
 }
 
@@ -274,16 +274,16 @@ export function createDefaultProject(templateId: TemplateId = "royal-curtain", s
       opacity: 1
     },
     photoFrame: {
-      x: size.width * 0.18,
-      y: size.height * 0.31,
-      width: size.width * 0.64,
-      height: size.height * 0.34,
-      radius: 72,
-      borderWidth: 7,
+      x: size.width * 0.15,
+      y: size.height * 0.22,
+      width: size.width * 0.7,
+      height: size.height * 0.47,
+      radius: 0,
+      borderWidth: 4,
       borderColor: "#F5E8CB",
-      shadowBlur: 36,
-      shadowOpacity: 0.42,
-      shape: "rounded"
+      shadowBlur: 28,
+      shadowOpacity: 0.55,
+      shape: "rectangle"
     },
     branding: {
       ...createOfficialLogos(),
@@ -292,7 +292,7 @@ export function createDefaultProject(templateId: TemplateId = "royal-curtain", s
       mediaPartnerLogos: [],
       certificationLogos: [],
       logoGap: 22,
-      maxLogoHeight: 72,
+      maxLogoHeight: 54,
       verticalAlign: "middle"
     },
     background: backgroundFor(templateId),
@@ -321,7 +321,7 @@ export function applySize(project: PosterProject, sizeId: PosterSizeId): PosterP
     ...project,
     size,
     updatedAt: new Date().toISOString(),
-    photoFrame: { ...project.photoFrame, x: size.width * 0.18, y: size.height * 0.31, width: size.width * 0.64, height: size.height * 0.34 },
+    photoFrame: { ...project.photoFrame, x: size.width * 0.15, y: size.height * 0.22, width: size.width * 0.7, height: size.height * 0.47, radius: 0, shape: "rectangle" },
     textStyles: textStylesFor(project.templateId, size),
     qr: { ...project.qr, x: size.width - 180, y: size.height - 210 }
   };

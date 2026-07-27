@@ -44,46 +44,41 @@ function drawCurtain(ctx: CanvasRenderingContext2D, project: PosterProject, scal
   const { width, height } = project.size;
   const bg = project.background;
   const gradient = ctx.createLinearGradient(0, 0, 0, height);
-  gradient.addColorStop(0, bg.gradientA);
-  gradient.addColorStop(0.45, bg.baseColor);
-  gradient.addColorStop(1, bg.gradientB);
+  gradient.addColorStop(0, "#5b0008");
+  gradient.addColorStop(0.18, "#320004");
+  gradient.addColorStop(0.58, "#150002");
+  gradient.addColorStop(1, "#050000");
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
 
   if (bg.curtainIntensity > 0 && visible(project, "curtain")) {
-    for (let x = -80; x < width + 80; x += 36) {
-      const wave = (Math.sin(x * 0.027) + 1) / 2;
-      const alpha = (0.035 + wave * 0.09) * bg.foldContrast * bg.curtainIntensity;
-      const fold = ctx.createLinearGradient(x, 0, x + 58, 0);
-      fold.addColorStop(0, `rgba(255,255,255,${alpha})`);
-      fold.addColorStop(0.42, "rgba(0,0,0,0)");
-      fold.addColorStop(1, `rgba(0,0,0,${alpha * 1.7})`);
+    for (let x = -90; x < width + 90; x += 28) {
+      const wave = (Math.sin(x * 0.033) + 1) / 2;
+      const alpha = (0.035 + wave * 0.12) * bg.foldContrast * bg.curtainIntensity;
+      const fold = ctx.createLinearGradient(x, 0, x + 46, 0);
+      fold.addColorStop(0, `rgba(255,76,38,${alpha * 0.65})`);
+      fold.addColorStop(0.38, "rgba(0,0,0,0)");
+      fold.addColorStop(1, `rgba(0,0,0,${alpha * 2.2})`);
       ctx.fillStyle = fold;
-      ctx.fillRect(x, 0, 58, height);
+      ctx.fillRect(x, 0, 46, height);
     }
   }
 
   if (visible(project, "sideLights")) {
-    const beam = bg.goldLightWidth;
-    for (const side of [0, width]) {
-      const dir = side === 0 ? 1 : -1;
-      const light = ctx.createLinearGradient(side, 0, side + dir * width * 0.22, 0);
-      light.addColorStop(0, `rgba(242,195,77,${0.72 * bg.sideLightIntensity})`);
-      light.addColorStop(0.16, `rgba(230,201,139,${0.2 * bg.sideLightIntensity})`);
-      light.addColorStop(1, "rgba(242,195,77,0)");
-      ctx.fillStyle = light;
-      ctx.fillRect(side === 0 ? 0 : width * 0.78, 0, width * 0.22, height);
-      ctx.fillStyle = `rgba(242,195,77,${0.95 * bg.sideLightIntensity})`;
-      ctx.shadowColor = "#F2C34D";
-      ctx.shadowBlur = 18 * scale;
-      ctx.fillRect(side === 0 ? 42 : width - 42 - beam, 60, beam, height - 120);
-      ctx.shadowBlur = 0;
-    }
+    drawStageLight(ctx, width * 0.02, -80, width * 0.18, height + 120, 18 * scale, bg.sideLightIntensity);
+    drawStageLight(ctx, width * 0.98, -80, width * 0.82, height + 120, 18 * scale, bg.sideLightIntensity);
   }
 
-  const spotlight = ctx.createRadialGradient(width / 2, height * 0.42, 20, width / 2, height * 0.42, height * 0.52);
-  spotlight.addColorStop(0, `rgba(255,232,172,${0.22 * bg.spotlight})`);
-  spotlight.addColorStop(0.55, "rgba(255,232,172,0.04)");
+  const centerPanel = ctx.createLinearGradient(width * 0.18, 0, width * 0.82, 0);
+  centerPanel.addColorStop(0, "rgba(0,0,0,0.38)");
+  centerPanel.addColorStop(0.5, "rgba(0,0,0,0.07)");
+  centerPanel.addColorStop(1, "rgba(0,0,0,0.38)");
+  ctx.fillStyle = centerPanel;
+  ctx.fillRect(width * 0.16, 0, width * 0.68, height);
+
+  const spotlight = ctx.createRadialGradient(width / 2, height * 0.36, 30, width / 2, height * 0.36, height * 0.5);
+  spotlight.addColorStop(0, `rgba(255,222,155,${0.18 * bg.spotlight})`);
+  spotlight.addColorStop(0.56, "rgba(255,120,80,0.035)");
   spotlight.addColorStop(1, "rgba(0,0,0,0)");
   ctx.fillStyle = spotlight;
   ctx.fillRect(0, 0, width, height);
@@ -98,6 +93,33 @@ function drawCurtain(ctx: CanvasRenderingContext2D, project: PosterProject, scal
     ctx.fillStyle = hexToRgba(bg.overlayColor, bg.overlayOpacity);
     ctx.fillRect(0, 0, width, height);
   }
+}
+
+function drawStageLight(ctx: CanvasRenderingContext2D, topX: number, topY: number, bottomX: number, bottomY: number, blur: number, intensity: number): void {
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(topX - 18, topY);
+  ctx.lineTo(topX + 18, topY);
+  ctx.lineTo(bottomX + 30, bottomY);
+  ctx.lineTo(bottomX - 30, bottomY);
+  ctx.closePath();
+  const glow = ctx.createLinearGradient(topX, topY, bottomX, bottomY);
+  glow.addColorStop(0, `rgba(255,247,198,${0.95 * intensity})`);
+  glow.addColorStop(0.45, `rgba(255,143,46,${0.72 * intensity})`);
+  glow.addColorStop(1, `rgba(255,65,20,${0.34 * intensity})`);
+  ctx.shadowColor = "#ffca6a";
+  ctx.shadowBlur = blur * 1.7;
+  ctx.fillStyle = glow;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  ctx.beginPath();
+  ctx.moveTo(topX, topY);
+  ctx.lineTo(bottomX, bottomY);
+  ctx.strokeStyle = `rgba(255,246,205,${0.98 * intensity})`;
+  ctx.lineWidth = 6;
+  ctx.stroke();
+  ctx.restore();
 }
 
 function hexToRgba(hex: string, alpha: number): string {
@@ -365,20 +387,21 @@ function drawDecorations(ctx: CanvasRenderingContext2D, project: PosterProject):
   ctx.strokeStyle = d.color;
   ctx.fillStyle = d.color;
   if (d.outerBorder) {
-    ctx.lineWidth = 4;
-    roundedRect(ctx, 34, 34, width - 68, height - 68, 20);
+    ctx.lineWidth = 3;
+    roundedRect(ctx, 40, 38, width - 80, height - 76, 10);
     ctx.stroke();
   }
   if (d.innerBorder) {
-    ctx.lineWidth = 1.5;
-    roundedRect(ctx, 58, 58, width - 116, height - 116, 12);
+    ctx.lineWidth = 1.2;
+    roundedRect(ctx, 70, 72, width - 140, height - 144, 6);
     ctx.stroke();
   }
   if (d.dividers) {
-    drawDivider(ctx, width / 2, height * 0.672, width * 0.62);
-    drawDivider(ctx, width / 2, height * 0.765, width * 0.52);
+    drawDivider(ctx, width / 2, height * 0.81, width * 0.3);
+    drawDivider(ctx, width / 2, height * 0.89, width * 0.34);
+    drawDivider(ctx, width / 2, height * 0.955, width * 0.25);
   }
-  if (d.footerFlourish) drawDivider(ctx, width / 2, height * 0.925, width * 0.34);
+  if (d.footerFlourish) drawDivider(ctx, width / 2, height * 0.985, width * 0.18);
   if (d.sparkles) {
     for (let i = 0; i < 42; i += 1) {
       const x = 90 + ((i * 137) % (width - 180));
