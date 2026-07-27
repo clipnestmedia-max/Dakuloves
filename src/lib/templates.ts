@@ -183,9 +183,9 @@ function textStylesFor(id: TemplateId, size: PosterSize): Record<string, TextSty
   const light = isCream ? "#4d1600" : "#F5E8CB";
   const gold = isCream ? "#8b5b0d" : "#F2C34D";
   return {
-    presentedBy: textStyle({ fontFamily: "Montserrat", fontSize: 20 * scaleY, fontWeight: 600, color: gold, width: 620, x: size.width / 2, y: 60 * scaleY, transform: "uppercase", letterSpacing: 2 }),
-    eventTitle: textStyle({ fontFamily: "Cinzel Decorative", fontSize: 56 * scaleY, fontWeight: 700, color: light, width: size.width * 0.82, x: size.width / 2, y: 222 * scaleY, glow: true, lineHeight: 0.96 }),
-    eventYear: textStyle({ fontFamily: "Montserrat", fontSize: 28 * scaleY, fontWeight: 600, color: gold, width: 500, x: size.width / 2, y: 286 * scaleY, transform: "uppercase", letterSpacing: 1.5 }),
+    presentedBy: textStyle({ fontFamily: "Montserrat", fontSize: 20 * scaleY, fontWeight: 600, color: gold, width: 620, x: size.width / 2, y: 108 * scaleY, transform: "uppercase", letterSpacing: 2 }),
+    eventTitle: textStyle({ fontFamily: "Cinzel Decorative", fontSize: 54 * scaleY, fontWeight: 700, color: light, width: size.width * 0.82, x: size.width / 2, y: 244 * scaleY, glow: true, lineHeight: 0.96 }),
+    eventYear: textStyle({ fontFamily: "Montserrat", fontSize: 26 * scaleY, fontWeight: 600, color: gold, width: 500, x: size.width / 2, y: 300 * scaleY, transform: "uppercase", letterSpacing: 1.5 }),
     congratulations: textStyle({ fontFamily: "Montserrat", fontSize: 34 * scaleY, fontWeight: 500, color: gold, width: 780, x: size.width / 2, y: 1036 * scaleY, transform: "uppercase", letterSpacing: 4, shadow: false }),
     candidateName: textStyle({ fontFamily: "Playfair Display", fontSize: 68 * scaleY, fontWeight: 800, color: light, width: size.width * 0.84, x: size.width / 2, y: 1188 * scaleY, transform: "uppercase", glow: true, letterSpacing: 1 }),
     candidateCategory: textStyle({ fontFamily: "Montserrat", fontSize: 34 * scaleY, fontWeight: 700, color: gold, width: size.width * 0.78, x: size.width / 2, y: 1288 * scaleY, transform: "uppercase", letterSpacing: 1 }),
