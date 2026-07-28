@@ -10,13 +10,11 @@ import {
   Eye,
   EyeOff,
   FileArchive,
-  FileDown,
   Image as ImageIcon,
   Layers,
   Lock,
   Minus,
   Plus,
-  Printer,
   Redo2,
   RefreshCw,
   Replace,
@@ -31,12 +29,13 @@ import {
 import { downloadBlob, fileToAsset, fileToLogo, sanitizeFilename } from "@/lib/assets";
 import { exportJpg, exportPdf, exportPng, qrAsPng, qrAsSvg, renderPosterToCanvas } from "@/lib/renderer";
 import { deleteDraft, listDrafts, loadDefaults, saveDefaults, saveDraft, type DraftRecord } from "@/lib/storage";
-import { fontOptions, posterSizes, statusOptions, templateNames } from "@/lib/templates";
+import { fontOptions, statusOptions, templateNames } from "@/lib/templates";
 import { hasBlockingErrors, validateProject } from "@/lib/validation";
 import { useEditorStore } from "@/store/editor";
 import type { BulkCandidateRow, ContactDetails, LogoAsset, PosterProject, TemplateId, TextStyle } from "@/lib/types";
 
 const tabs = ["Candidate", "Candidate Photo", "Event", "Branding", "Text Styling", "Contact Details", "Sponsors", "Background", "Templates", "Export"];
+const candidateCategoryOptions = ["AUDITIONS CONTESTANT", "MODEL", "ACTOR", "SINGER", "DANCER", "INFLUENCER", "FINALIST", "WINNER"];
 
 export function PosterEditor() {
   const { project, zoom, showGuides, selectedLayer, undo, redo, newProject, setProject, updateProject, dirty, markClean } = useEditorStore();
@@ -45,6 +44,7 @@ export function PosterEditor() {
   const [adminOpen, setAdminOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [previewOnly, setPreviewOnly] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const issues = useMemo(() => validateProject(project), [project]);
 
   useEffect(() => {
@@ -112,13 +112,6 @@ export function PosterEditor() {
     }
   }
 
-  async function printPoster() {
-    setPreviewOnly(true);
-    await new Promise((resolve) => setTimeout(resolve, 350));
-    window.print();
-    setPreviewOnly(false);
-  }
-
   if (previewOnly) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-white p-0">
@@ -133,21 +126,18 @@ export function PosterEditor() {
         onNew={newProject}
         onDrafts={() => setDraftOpen(true)}
         onAdmin={() => setAdminOpen(true)}
-        onBulk={() => setBulkOpen(true)}
         onPreview={() => setPreviewOnly(true)}
         onReset={() => confirm("Reset this project?") && newProject()}
-        onExport={runExport}
-        onPrint={printPoster}
       />
-      <SettingsPanel />
+      <SettingsPanel onPreview={() => setPreviewOnly(true)} onExport={runExport} advancedOpen={advancedOpen} onAdvancedOpenChange={setAdvancedOpen} />
       <section className="no-print relative row-start-2 flex min-h-[560px] items-center justify-center overflow-auto bg-[#0d0b0c] p-5 md:p-8">
         <div className="absolute left-4 top-4 z-10 flex items-center gap-2 rounded-md border border-white/10 bg-black/35 px-3 py-2 text-xs text-cream">
           <Eye size={14} /> Drag photo to adjust position
         </div>
         <PosterCanvas zoom={zoom} guides={showGuides} />
       </section>
-      <LayerPanel />
-      <BottomBar issues={issues} exporting={exporting} onExport={runExport} onPrint={printPoster} />
+      {advancedOpen ? <LayerPanel /> : <QuickInfoPanel onAdmin={() => setAdminOpen(true)} onBulk={() => setBulkOpen(true)} />}
+      <BottomBar issues={issues} exporting={exporting} onExport={runExport} />
       {draftOpen && <DraftManager onClose={() => setDraftOpen(false)} onLoad={(draft) => setProject(draft.project)} />}
       {adminOpen && <AdminDefaultsModal onClose={() => setAdminOpen(false)} />}
       {bulkOpen && <BulkGenerator onClose={() => setBulkOpen(false)} />}
@@ -168,44 +158,26 @@ function EditorToolbar(props: {
   onNew: () => void;
   onDrafts: () => void;
   onAdmin: () => void;
-  onBulk: () => void;
   onPreview: () => void;
   onReset: () => void;
-  onExport: (format: "png" | "jpg" | "pdf") => void;
-  onPrint: () => void;
 }) {
-  const { project, zoom, showGuides, setTemplate, setSize, setZoom, setGuides, undo, redo } = useEditorStore();
+  const { zoom, setZoom, undo, redo } = useEditorStore();
   return (
-    <header className="no-print col-span-3 flex min-w-0 items-center gap-2 border-b border-white/10 bg-[#141012] px-3">
+    <header className="no-print col-span-3 flex min-w-0 flex-wrap items-center gap-2 border-b border-white/10 bg-[#141012] px-3 py-2">
       <div className="flex min-w-[220px] items-center gap-2 font-bold text-cream">
         <Wand2 className="text-brightgold" size={20} /> Candidate Poster Studio
       </div>
       <button className="btn" onClick={props.onNew} title="New project">New</button>
-      <select className="input max-w-56" value={project.templateId} onChange={(e) => setTemplate(e.target.value as TemplateId)} aria-label="Template selector">
-        {Object.entries(templateNames).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
-      </select>
-      <select className="input max-w-52" value={project.size.id} onChange={(e) => setSize(e.target.value as never)} aria-label="Poster size selector">
-        {posterSizes.map((size) => <option key={size.id} value={size.id}>{size.label}</option>)}
-      </select>
       <IconButton label="Undo" onClick={undo}><Undo2 size={17} /></IconButton>
       <IconButton label="Redo" onClick={redo}><Redo2 size={17} /></IconButton>
       <IconButton label="Zoom out" onClick={() => setZoom(zoom - 0.05)}><Minus size={17} /></IconButton>
       <span className="w-14 text-center text-xs text-cream">{Math.round(zoom * 100)}%</span>
       <IconButton label="Zoom in" onClick={() => setZoom(zoom + 0.05)}><Plus size={17} /></IconButton>
       <button className="btn" onClick={() => setZoom(0.46)}>Fit</button>
-      <button className="btn" onClick={() => setGuides(!showGuides)}>{showGuides ? "Guides On" : "Guides Off"}</button>
-      <button className="btn" onClick={props.onDrafts}><Save size={16} /> Drafts</button>
+      <button className="btn ml-auto" onClick={props.onDrafts}><Save size={16} /> Drafts</button>
       <button className="btn" onClick={props.onAdmin}><Settings size={16} /> Defaults</button>
-      <button className="btn" onClick={props.onBulk}><FileArchive size={16} /> Bulk</button>
       <button className="btn" onClick={props.onPreview}><Eye size={16} /> Preview</button>
       <button className="btn btn-danger" onClick={props.onReset}><RefreshCw size={16} /> Reset</button>
-      <select className="input ml-auto max-w-36" onChange={(e) => { if (e.target.value) props.onExport(e.target.value as "png" | "jpg" | "pdf"); e.target.value = ""; }} defaultValue="" aria-label="Export menu">
-        <option value="" disabled>Export</option>
-        <option value="png">PNG</option>
-        <option value="jpg">JPG</option>
-        <option value="pdf">PDF</option>
-      </select>
-      <IconButton label="Print poster" onClick={props.onPrint}><Printer size={17} /></IconButton>
     </header>
   );
 }
@@ -267,40 +239,113 @@ function PosterCanvas({ zoom, guides, className, printMode = false, exportScale 
   }
 
   return (
-    <div ref={wrapRef} onDrop={drop} onDragOver={(e) => e.preventDefault()} className={className}>
+    <div ref={wrapRef} onDrop={drop} onDragOver={(e) => e.preventDefault()} className={`flex w-full justify-center ${className ?? ""}`}>
       <canvas
         ref={canvasRef}
         onPointerDown={pointerDown}
         onPointerMove={pointerMove}
         onPointerUp={pointerUp}
         onPointerCancel={pointerUp}
-        className={`block bg-black shadow-2xl ${dragging ? "cursor-grabbing" : "cursor-grab"}`}
-        style={printMode ? { width: "auto", height: "100vh" } : { width: project.size.width * (zoom ?? 1), height: project.size.height * (zoom ?? 1) }}
+        className={`block max-w-full bg-black shadow-2xl ${dragging ? "cursor-grabbing" : "cursor-grab"}`}
+        style={printMode
+          ? { width: "auto", height: "100vh" }
+          : {
+              width: project.size.width * (zoom ?? 1),
+              height: "auto",
+              maxHeight: "calc(100svh - 150px)",
+              aspectRatio: `${project.size.width} / ${project.size.height}`
+            }}
       />
     </div>
   );
 }
 
-function SettingsPanel() {
+function SettingsPanel({
+  onPreview,
+  onExport,
+  advancedOpen,
+  onAdvancedOpenChange
+}: {
+  onPreview: () => void;
+  onExport: (format: "png" | "jpg" | "pdf") => void;
+  advancedOpen: boolean;
+  onAdvancedOpenChange: (open: boolean) => void;
+}) {
   const { activeTab, setActiveTab } = useEditorStore();
   return (
     <aside className="panel no-print row-start-2 overflow-hidden border-r">
-      <div className="flex gap-1 overflow-x-auto border-b border-white/10 p-2 md:grid md:grid-cols-2">
-        {tabs.map((tab) => <button key={tab} className={`btn whitespace-nowrap !px-2 !py-1 text-xs ${activeTab === tab ? "btn-primary" : ""}`} onClick={() => setActiveTab(tab)}>{tab}</button>)}
-      </div>
       <div className="scroll-thin h-[calc(100vh-112px)] overflow-auto p-4">
-        {activeTab === "Candidate" && <CandidatePanel />}
-        {activeTab === "Candidate Photo" && <PhotoPanel />}
-        {activeTab === "Event" && <EventPanel />}
-        {activeTab === "Branding" && <BrandingPanel />}
-        {activeTab === "Text Styling" && <TextStylePanel />}
-        {activeTab === "Contact Details" && <ContactPanel />}
-        {activeTab === "Sponsors" && <SponsorPanel />}
-        {activeTab === "Background" && <BackgroundPanel />}
-        {activeTab === "Templates" && <TemplatePanel />}
-        {activeTab === "Export" && <ExportPanel />}
+        <SimplePamphletPanel onPreview={onPreview} onExport={onExport} />
+        <details className="rounded-md border border-white/10 bg-white/[.035] p-3" open={advancedOpen} onToggle={(event) => onAdvancedOpenChange(event.currentTarget.open)}>
+          <summary className="cursor-pointer font-semibold text-champagne">Advanced Settings</summary>
+          <div className="mt-3 flex gap-1 overflow-x-auto border-b border-white/10 pb-2 md:grid md:grid-cols-2">
+            {tabs.map((tab) => <button key={tab} className={`btn whitespace-nowrap !px-2 !py-1 text-xs ${activeTab === tab ? "btn-primary" : ""}`} onClick={() => setActiveTab(tab)}>{tab}</button>)}
+          </div>
+          <div className="pt-4">
+            {activeTab === "Candidate" && <CandidatePanel />}
+            {activeTab === "Candidate Photo" && <PhotoPanel />}
+            {activeTab === "Event" && <EventPanel />}
+            {activeTab === "Branding" && <BrandingPanel />}
+            {activeTab === "Text Styling" && <TextStylePanel />}
+            {activeTab === "Contact Details" && <ContactPanel />}
+            {activeTab === "Sponsors" && <SponsorPanel />}
+            {activeTab === "Background" && <BackgroundPanel />}
+            {activeTab === "Templates" && <TemplatePanel />}
+            {activeTab === "Export" && <ExportPanel />}
+          </div>
+        </details>
       </div>
     </aside>
+  );
+}
+
+function SimplePamphletPanel({ onPreview, onExport }: { onPreview: () => void; onExport: (format: "png" | "jpg" | "pdf") => void }) {
+  const { project, setCandidatePhoto, updateProject, selectLayer } = useEditorStore();
+  const [customCategory, setCustomCategory] = useState(!candidateCategoryOptions.includes(project.candidate.category));
+  const errors = validateProject(project).filter((issue) => issue.level === "error").length;
+  async function upload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      setCandidatePhoto(await fileToAsset(file));
+      selectLayer("candidatePhoto");
+      event.target.value = "";
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Upload failed.");
+    }
+  }
+  const setCandidate = (key: keyof PosterProject["candidate"], value: string) => updateProject((p) => ({ ...p, candidate: { ...p.candidate, [key]: value } }));
+  return (
+    <Section title="Create Candidate Pamphlet">
+      <label className="btn btn-primary w-full">
+        <Upload size={16} /> {project.candidatePhoto ? "Replace Candidate Photo" : "Upload Candidate Photo"}
+        <input className="hidden" type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" onChange={upload} />
+      </label>
+      {project.candidatePhoto && <p className="truncate text-xs text-cream/70">{project.candidatePhoto.name}</p>}
+      <TextField label="Candidate full name" value={project.candidate.fullName} onChange={(value) => setCandidate("fullName", value)} />
+      <label className="field">
+        <span>Candidate category</span>
+        <select
+          className="input"
+          value={customCategory ? "Custom" : project.candidate.category}
+          onChange={(event) => {
+            const value = event.target.value;
+            setCustomCategory(value === "Custom");
+            if (value !== "Custom") setCandidate("category", value);
+          }}
+        >
+          {candidateCategoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}
+          <option value="Custom">Enter custom category</option>
+        </select>
+      </label>
+      {customCategory && <TextField label="Custom candidate category" value={project.candidate.category} onChange={(value) => setCandidate("category", value)} />}
+      <p className="rounded-md border border-brightgold/25 bg-brightgold/10 p-2 text-xs text-cream/80">Drag the photo directly on the poster to adjust its position.</p>
+      <Slider label="Photo zoom" value={project.photoTransform.zoom} min={0.4} max={3} step={0.01} onChange={(value) => updateProject((p) => ({ ...p, photoTransform: { ...p.photoTransform, zoom: value } }))} />
+      <div className="grid grid-cols-2 gap-2">
+        <button className="btn" onClick={onPreview}><Eye size={16} /> Preview</button>
+        <button className="btn btn-primary" disabled={Boolean(errors)} onClick={() => onExport("png")}><Download size={16} /> Download HD PNG</button>
+      </div>
+    </Section>
   );
 }
 
@@ -643,7 +688,34 @@ function LayerPanel() {
   );
 }
 
-function BottomBar({ issues, exporting, onExport, onPrint }: { issues: ReturnType<typeof validateProject>; exporting: string; onExport: (format: "png" | "jpg" | "pdf") => void; onPrint: () => void }) {
+function QuickInfoPanel({ onAdmin, onBulk }: { onAdmin: () => void; onBulk: () => void }) {
+  const { project } = useEditorStore();
+  return (
+    <aside className="panel no-print row-start-2 overflow-hidden border-l">
+      <div className="border-b border-white/10 p-4 font-semibold text-champagne">Pamphlet Defaults</div>
+      <div className="scroll-thin grid h-[calc(100vh-112px)] content-start gap-3 overflow-auto p-4 text-sm">
+        <div className="rounded-md border border-white/10 bg-white/[.035] p-3">
+          <p className="text-xs uppercase tracking-[0.18em] text-brightgold">Template</p>
+          <p className="mt-1 font-semibold">{templateNames[project.templateId]}</p>
+        </div>
+        <div className="rounded-md border border-white/10 bg-white/[.035] p-3">
+          <p className="text-xs uppercase tracking-[0.18em] text-brightgold">Admin Defaults</p>
+          <p className="mt-2 text-cream/75">{project.event.title} {project.event.year}</p>
+          <p className="mt-2 text-cream/75">{phoneTextPreview(project.contact)}</p>
+          <p className="mt-2 text-cream/75">{project.contact.website}</p>
+        </div>
+        <button className="btn" onClick={onAdmin}><Settings size={16} /> Admin Defaults</button>
+        <button className="btn" onClick={onBulk}><FileArchive size={16} /> Bulk Generator</button>
+      </div>
+    </aside>
+  );
+}
+
+function phoneTextPreview(contact: ContactDetails): string {
+  return [contact.primaryPhone, contact.secondaryPhone, contact.thirdPhone].filter(Boolean).join(", ");
+}
+
+function BottomBar({ issues, exporting, onExport }: { issues: ReturnType<typeof validateProject>; exporting: string; onExport: (format: "png" | "jpg" | "pdf") => void }) {
   const errors = issues.filter((issue) => issue.level === "error").length;
   const warnings = issues.length - errors;
   return (
@@ -652,10 +724,7 @@ function BottomBar({ issues, exporting, onExport, onPrint }: { issues: ReturnTyp
       <span className={warnings ? "text-yellow-200" : "text-cream/60"}>{warnings} warnings</span>
       <div className="scroll-thin flex min-w-0 flex-1 gap-3 overflow-x-auto text-xs text-cream/70">{issues.slice(0, 3).map((issue) => <span key={`${issue.field}-${issue.message}`}>{issue.field}: {issue.message}</span>)}</div>
       {exporting && <span className="text-brightgold">{exporting}</span>}
-      <button className="btn btn-primary" disabled={Boolean(errors)} onClick={() => onExport("png")}><Download size={16} /> PNG</button>
-      <button className="btn" disabled={Boolean(errors)} onClick={() => onExport("jpg")}>JPG</button>
-      <button className="btn" disabled={Boolean(errors)} onClick={() => onExport("pdf")}><FileDown size={16} /> PDF</button>
-      <button className="btn" onClick={onPrint}><Printer size={16} /> Print</button>
+      <button className="btn btn-primary" disabled={Boolean(errors)} onClick={() => onExport("png")}><Download size={16} /> HD PNG</button>
     </footer>
   );
 }

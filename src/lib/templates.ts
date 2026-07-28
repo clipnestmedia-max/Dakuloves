@@ -10,6 +10,7 @@ export const posterSizes: PosterSize[] = [
 ];
 
 export const templateNames: Record<TemplateId, string> = {
+  "official-audition-candidate": "Official Audition Candidate Pamphlet",
   "royal-curtain": "Royal Curtain Announcement",
   "black-luxury": "Black Luxury Finalist",
   "burgundy-spotlight": "Burgundy Spotlight",
@@ -154,6 +155,7 @@ function textStyle(partial: Partial<TextStyle>): TextStyle {
 
 function backgroundFor(id: TemplateId): BackgroundSettings {
   const presets: Record<TemplateId, Pick<BackgroundSettings, "preset" | "baseColor" | "gradientA" | "gradientB" | "overlayColor">> = {
+    "official-audition-candidate": { preset: "Official Audition Curtain", baseColor: "#210002", gradientA: "#72000a", gradientB: "#080000", overlayColor: "#120000" },
     "royal-curtain": { preset: "Royal Maroon Curtain", baseColor: "#320006", gradientA: "#57000D", gradientB: "#140003", overlayColor: "#140003" },
     "black-luxury": { preset: "Black and Gold Luxury", baseColor: "#070506", gradientA: "#1f1510", gradientB: "#000000", overlayColor: "#240e00" },
     "burgundy-spotlight": { preset: "Burgundy Spotlight", baseColor: "#42000a", gradientA: "#6d0816", gradientB: "#190005", overlayColor: "#120003" },
@@ -163,14 +165,14 @@ function backgroundFor(id: TemplateId): BackgroundSettings {
   };
   return {
     ...presets[id],
-    curtainIntensity: id === "cream-gold" ? 0.25 : 0.82,
-    foldContrast: 0.62,
-    sideLightIntensity: 0.86,
-    goldLightWidth: 16,
-    vignette: 0.68,
-    spotlight: 0.55,
-    textureOpacity: 0.22,
-    particleOpacity: 0.18,
+    curtainIntensity: id === "cream-gold" ? 0.25 : id === "official-audition-candidate" ? 0.96 : 0.82,
+    foldContrast: id === "official-audition-candidate" ? 0.74 : 0.62,
+    sideLightIntensity: id === "official-audition-candidate" ? 1 : 0.86,
+    goldLightWidth: id === "official-audition-candidate" ? 22 : 16,
+    vignette: id === "official-audition-candidate" ? 0.72 : 0.68,
+    spotlight: id === "official-audition-candidate" ? 0.34 : 0.55,
+    textureOpacity: id === "official-audition-candidate" ? 0.14 : 0.22,
+    particleOpacity: id === "official-audition-candidate" ? 0.09 : 0.18,
     brightness: 1,
     blur: 0,
     overlayOpacity: 0.18
@@ -180,8 +182,27 @@ function backgroundFor(id: TemplateId): BackgroundSettings {
 function textStylesFor(id: TemplateId, size: PosterSize): Record<string, TextStyle> {
   const scaleY = size.height / 1440;
   const isCream = id === "cream-gold";
+  const isOfficial = id === "official-audition-candidate";
   const light = isCream ? "#4d1600" : "#F5E8CB";
   const gold = isCream ? "#8b5b0d" : "#F2C34D";
+  if (isOfficial) {
+    const topBranding = {
+      presentedByY: size.height * 0.045,
+      eventTitleY: size.height * 0.125,
+      eventYearY: size.height * 0.167
+    };
+    return {
+      presentedBy: textStyle({ fontFamily: "Montserrat", fontSize: 24 * scaleY, fontWeight: 500, color: "#EED7AD", width: size.width * 0.5, x: size.width / 2, y: topBranding.presentedByY, transform: "uppercase", letterSpacing: 2.2, shadow: false }),
+      eventTitle: textStyle({ fontFamily: "Montserrat", fontSize: 52 * scaleY, fontWeight: 400, color: "#EED7AD", width: size.width * 0.88, x: size.width / 2, y: topBranding.eventTitleY, transform: "uppercase", letterSpacing: 0, glow: false, lineHeight: 1.02 }),
+      eventYear: textStyle({ fontFamily: "Montserrat", fontSize: 56 * scaleY, fontWeight: 400, color: "#EED7AD", width: 500, x: size.width / 2, y: topBranding.eventYearY, transform: "uppercase", letterSpacing: 0, shadow: false }),
+      congratulations: textStyle({ fontFamily: "Montserrat", fontSize: 35 * scaleY, fontWeight: 400, color: "#EED7AD", width: 780, x: size.width / 2, y: 1016 * scaleY, transform: "uppercase", letterSpacing: 4, shadow: false }),
+      candidateName: textStyle({ fontFamily: "Cinzel", fontSize: 62 * scaleY, fontWeight: 800, color: "#EED7AD", width: size.width * 0.82, x: size.width / 2, y: 1128 * scaleY, transform: "uppercase", glow: false, letterSpacing: 0 }),
+      candidateCategory: textStyle({ fontFamily: "Montserrat", fontSize: 32 * scaleY, fontWeight: 400, color: "#EED7AD", width: size.width * 0.78, x: size.width / 2, y: 1246 * scaleY, transform: "uppercase", letterSpacing: 3, shadow: false }),
+      phone: textStyle({ fontFamily: "Montserrat", fontSize: 23 * scaleY, fontWeight: 400, color: "#EED7AD", width: size.width * 0.62, x: size.width * 0.31, y: 1340 * scaleY, align: "left", letterSpacing: 0, shadow: false }),
+      website: textStyle({ fontFamily: "Montserrat", fontSize: 23 * scaleY, fontWeight: 400, color: "#EED7AD", width: size.width * 0.78, x: size.width / 2, y: 1389 * scaleY, visible: true, transform: "uppercase", letterSpacing: 0, shadow: false }),
+      footer: textStyle({ fontFamily: "Montserrat", fontSize: 18 * scaleY, fontWeight: 500, color: light, width: size.width * 0.78, x: size.width / 2, y: 1418 * scaleY, opacity: 0.68, visible: false })
+    };
+  }
   return {
     presentedBy: textStyle({ fontFamily: "Montserrat", fontSize: 20 * scaleY, fontWeight: 600, color: gold, width: 620, x: size.width / 2, y: 108 * scaleY, transform: "uppercase", letterSpacing: 2 }),
     eventTitle: textStyle({ fontFamily: "Cinzel Decorative", fontSize: 54 * scaleY, fontWeight: 700, color: light, width: size.width * 0.82, x: size.width / 2, y: 244 * scaleY, glow: true, lineHeight: 0.96 }),
@@ -195,7 +216,7 @@ function textStylesFor(id: TemplateId, size: PosterSize): Record<string, TextSty
   };
 }
 
-export function createDefaultProject(templateId: TemplateId = "royal-curtain", sizeId: PosterSizeId = "poster-3-4"): PosterProject {
+export function createDefaultProject(templateId: TemplateId = "official-audition-candidate", sizeId: PosterSizeId = "poster-3-4"): PosterProject {
   const size = posterSizes.find((item) => item.id === sizeId) ?? posterSizes[0];
   const now = new Date().toISOString();
   return {
@@ -211,7 +232,7 @@ export function createDefaultProject(templateId: TemplateId = "royal-curtain", s
       number: "",
       id: "",
       title: "",
-      category: "Audition Category",
+      category: "AUDITIONS CONTESTANT",
       auditionCategory: "",
       status: "Finalist",
       rank: "",
@@ -226,9 +247,9 @@ export function createDefaultProject(templateId: TemplateId = "royal-curtain", s
       customMessage: ""
     },
     event: {
-      organisationName: "Your Organisation",
-      presentedBy: "Presented By",
-      title: "Grand Talent Auditions",
+      organisationName: "Dakuloves Production",
+      presentedBy: "PRESENTED BY",
+      title: "REAL TITLE OF MR & MISS BIHAR",
       subtitle: "",
       year: String(new Date().getFullYear()),
       season: "",
@@ -240,14 +261,14 @@ export function createDefaultProject(templateId: TemplateId = "royal-curtain", s
       registrationNumber: "",
       contestantId: "",
       termsLine: "",
-      footerNote: "Create, customise and export premium candidate announcements."
+      footerNote: ""
     },
     contact: {
-      primaryPhone: "+91 98765 43210",
-      secondaryPhone: "",
-      thirdPhone: "",
+      primaryPhone: "7765001122",
+      secondaryPhone: "9122441332",
+      thirdPhone: "6207276248",
       whatsapp: "",
-      website: "www.example.com",
+      website: "DAKULOVESPRODUCTIONS.IN",
       email: "",
       instagram: "",
       facebook: "",
@@ -255,7 +276,7 @@ export function createDefaultProject(templateId: TemplateId = "royal-curtain", s
       address: "",
       registrationUrl: "",
       candidateProfileUrl: "",
-      phoneDisplayMode: "bullet",
+      phoneDisplayMode: "comma",
       iconSize: 24,
       iconColor: "#F2C34D"
     },
@@ -274,16 +295,16 @@ export function createDefaultProject(templateId: TemplateId = "royal-curtain", s
       opacity: 1
     },
     photoFrame: {
-      x: size.width * 0.15,
-      y: size.height * 0.22,
-      width: size.width * 0.7,
-      height: size.height * 0.47,
-      radius: 0,
-      borderWidth: 4,
+      x: size.width * 0.213,
+      y: size.height * 0.203,
+      width: size.width * 0.574,
+      height: size.height * 0.485,
+      radius: size.width * 0.078,
+      borderWidth: 0,
       borderColor: "#F5E8CB",
       shadowBlur: 28,
       shadowOpacity: 0.55,
-      shape: "rectangle"
+      shape: "rounded"
     },
     branding: {
       ...createOfficialLogos(),
@@ -291,26 +312,42 @@ export function createDefaultProject(templateId: TemplateId = "royal-curtain", s
       sponsorLogos: [],
       mediaPartnerLogos: [],
       certificationLogos: [],
-      logoGap: 22,
-      maxLogoHeight: 54,
+      logoGap: 18,
+      maxLogoHeight: 70,
       verticalAlign: "middle"
     },
     background: backgroundFor(templateId),
     qr: { visible: false, source: "website", customUrl: "", size: 120, x: size.width - 180, y: size.height - 210, foreground: "#140003", background: "#F5E8CB", margin: 1, border: 10 },
-    decorations: { dividers: true, diamond: true, sparkles: true, cornerOrnaments: true, outerBorder: true, innerBorder: true, sideGoldLines: true, footerFlourish: true, color: "#F2C34D", opacity: 0.92 },
+    decorations: { dividers: true, diamond: true, sparkles: true, cornerOrnaments: false, outerBorder: false, innerBorder: false, sideGoldLines: true, footerFlourish: true, color: "#EED7AD", opacity: 0.8 },
     textStyles: textStylesFor(templateId, size),
     layers: layerDefaults(),
-    export: { format: "png", scale: 1, jpgQuality: 0.92, transparentPng: false, pdfPage: "poster", bleedMm: 0, cropMarks: false },
+    export: { format: "png", scale: 2, jpgQuality: 0.92, transparentPng: false, pdfPage: "poster", bleedMm: 0, cropMarks: false },
     allowNoPhoto: false
   };
 }
 
 export function applyTemplate(project: PosterProject, templateId: TemplateId): PosterProject {
+  const officialFrame = {
+    ...project.photoFrame,
+    x: project.size.width * 0.213,
+    y: project.size.height * 0.203,
+    width: project.size.width * 0.574,
+    height: project.size.height * 0.485,
+    radius: project.size.width * 0.078,
+    borderWidth: 0,
+    shape: "rounded" as const
+  };
   return {
     ...project,
     templateId,
     updatedAt: new Date().toISOString(),
     background: backgroundFor(templateId),
+    photoFrame: templateId === "official-audition-candidate" ? officialFrame : project.photoFrame,
+    decorations: templateId === "official-audition-candidate"
+      ? { ...project.decorations, dividers: true, sparkles: true, cornerOrnaments: false, outerBorder: false, innerBorder: false, sideGoldLines: true, footerFlourish: true, color: "#EED7AD", opacity: 0.8 }
+      : project.decorations,
+    branding: templateId === "official-audition-candidate" ? { ...project.branding, logoGap: 18, maxLogoHeight: 70 } : project.branding,
+    export: templateId === "official-audition-candidate" ? { ...project.export, format: "png", scale: 2 } : project.export,
     textStyles: textStylesFor(templateId, project.size)
   };
 }
@@ -321,7 +358,9 @@ export function applySize(project: PosterProject, sizeId: PosterSizeId): PosterP
     ...project,
     size,
     updatedAt: new Date().toISOString(),
-    photoFrame: { ...project.photoFrame, x: size.width * 0.15, y: size.height * 0.22, width: size.width * 0.7, height: size.height * 0.47, radius: 0, shape: "rectangle" },
+    photoFrame: project.templateId === "official-audition-candidate"
+      ? { ...project.photoFrame, x: size.width * 0.213, y: size.height * 0.203, width: size.width * 0.574, height: size.height * 0.485, radius: size.width * 0.078, borderWidth: 0, shape: "rounded" }
+      : { ...project.photoFrame, x: size.width * 0.15, y: size.height * 0.22, width: size.width * 0.7, height: size.height * 0.47, radius: 0, shape: "rectangle" },
     textStyles: textStylesFor(project.templateId, size),
     qr: { ...project.qr, x: size.width - 180, y: size.height - 210 }
   };

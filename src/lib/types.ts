@@ -1,5 +1,6 @@
 export type PosterSizeId = "poster-3-4" | "instagram" | "story" | "square" | "a4" | "a5" | "custom";
 export type TemplateId =
+  | "official-audition-candidate"
   | "royal-curtain"
   | "black-luxury"
   | "burgundy-spotlight"

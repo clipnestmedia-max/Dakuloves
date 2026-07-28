@@ -43,10 +43,11 @@ function layerLocked(project: PosterProject, id: string): boolean {
 function drawCurtain(ctx: CanvasRenderingContext2D, project: PosterProject, scale: number): void {
   const { width, height } = project.size;
   const bg = project.background;
+  const isOfficial = project.templateId === "official-audition-candidate";
   const gradient = ctx.createLinearGradient(0, 0, 0, height);
-  gradient.addColorStop(0, "#5b0008");
-  gradient.addColorStop(0.18, "#320004");
-  gradient.addColorStop(0.58, "#150002");
+  gradient.addColorStop(0, isOfficial ? "#760009" : "#5b0008");
+  gradient.addColorStop(0.18, isOfficial ? "#370003" : "#320004");
+  gradient.addColorStop(0.58, isOfficial ? "#160001" : "#150002");
   gradient.addColorStop(1, "#050000");
   ctx.fillStyle = gradient;
   ctx.fillRect(0, 0, width, height);
@@ -65,16 +66,23 @@ function drawCurtain(ctx: CanvasRenderingContext2D, project: PosterProject, scal
   }
 
   if (visible(project, "sideLights")) {
-    drawStageLight(ctx, width * 0.02, -80, width * 0.18, height + 120, 18 * scale, bg.sideLightIntensity);
-    drawStageLight(ctx, width * 0.98, -80, width * 0.82, height + 120, 18 * scale, bg.sideLightIntensity);
+    if (isOfficial) {
+      drawStageLight(ctx, width * 0.018, -72, width * 0.16, height + 90, 28 * scale, bg.sideLightIntensity, 9);
+      drawStageLight(ctx, width * 0.088, -92, width * 0.045, height + 100, 16 * scale, bg.sideLightIntensity * 0.72, 5);
+      drawStageLight(ctx, width * 0.982, -72, width * 0.84, height + 90, 28 * scale, bg.sideLightIntensity, 9);
+      drawStageLight(ctx, width * 0.912, -92, width * 0.955, height + 100, 16 * scale, bg.sideLightIntensity * 0.72, 5);
+    } else {
+      drawStageLight(ctx, width * 0.02, -80, width * 0.18, height + 120, 18 * scale, bg.sideLightIntensity);
+      drawStageLight(ctx, width * 0.98, -80, width * 0.82, height + 120, 18 * scale, bg.sideLightIntensity);
+    }
   }
 
   const centerPanel = ctx.createLinearGradient(width * 0.18, 0, width * 0.82, 0);
-  centerPanel.addColorStop(0, "rgba(0,0,0,0.38)");
-  centerPanel.addColorStop(0.5, "rgba(0,0,0,0.07)");
-  centerPanel.addColorStop(1, "rgba(0,0,0,0.38)");
+  centerPanel.addColorStop(0, `rgba(0,0,0,${isOfficial ? 0.5 : 0.38})`);
+  centerPanel.addColorStop(0.5, `rgba(0,0,0,${isOfficial ? 0.16 : 0.07})`);
+  centerPanel.addColorStop(1, `rgba(0,0,0,${isOfficial ? 0.5 : 0.38})`);
   ctx.fillStyle = centerPanel;
-  ctx.fillRect(width * 0.16, 0, width * 0.68, height);
+  ctx.fillRect(width * 0.14, 0, width * 0.72, height);
 
   const spotlight = ctx.createRadialGradient(width / 2, height * 0.36, 30, width / 2, height * 0.36, height * 0.5);
   spotlight.addColorStop(0, `rgba(255,222,155,${0.18 * bg.spotlight})`);
@@ -95,7 +103,7 @@ function drawCurtain(ctx: CanvasRenderingContext2D, project: PosterProject, scal
   }
 }
 
-function drawStageLight(ctx: CanvasRenderingContext2D, topX: number, topY: number, bottomX: number, bottomY: number, blur: number, intensity: number): void {
+function drawStageLight(ctx: CanvasRenderingContext2D, topX: number, topY: number, bottomX: number, bottomY: number, blur: number, intensity: number, coreWidth = 6): void {
   ctx.save();
   ctx.beginPath();
   ctx.moveTo(topX - 18, topY);
@@ -117,7 +125,7 @@ function drawStageLight(ctx: CanvasRenderingContext2D, topX: number, topY: numbe
   ctx.moveTo(topX, topY);
   ctx.lineTo(bottomX, bottomY);
   ctx.strokeStyle = `rgba(255,246,205,${0.98 * intensity})`;
-  ctx.lineWidth = 6;
+  ctx.lineWidth = coreWidth;
   ctx.stroke();
   ctx.restore();
 }
@@ -328,10 +336,14 @@ async function drawLogoStrip(
 }
 
 async function drawTopLogos(ctx: CanvasRenderingContext2D, project: PosterProject): Promise<void> {
+  const isOfficial = project.templateId === "official-audition-candidate";
+  const topBranding = {
+    logoRowY: project.size.height * 0.08
+  };
   const logos = [
     project.branding.mainLogo,
-    project.branding.productionLogo,
     project.branding.presenterLogo,
+    project.branding.productionLogo,
     ...project.branding.partnerLogos
   ].filter((logo): logo is LogoAsset => Boolean(logo && !logo.hidden));
 
@@ -339,10 +351,10 @@ async function drawTopLogos(ctx: CanvasRenderingContext2D, project: PosterProjec
     ctx,
     logos,
     project.size.width / 2,
-    project.size.height * 0.115,
-    project.size.width * 0.72,
-    project.branding.maxLogoHeight,
-    project.branding.logoGap,
+    isOfficial ? topBranding.logoRowY : project.size.height * 0.115,
+    isOfficial ? project.size.width * 0.42 : project.size.width * 0.72,
+    isOfficial ? Math.min(project.branding.maxLogoHeight, project.size.height * 0.043) : project.branding.maxLogoHeight,
+    isOfficial ? 14 : project.branding.logoGap,
     () => {
       ctx.save();
       ctx.fillStyle = "rgba(245,232,203,.82)";
@@ -382,10 +394,20 @@ function drawDecorations(ctx: CanvasRenderingContext2D, project: PosterProject):
   if (!visible(project, "borders")) return;
   const { width, height } = project.size;
   const d = project.decorations;
+  const isOfficial = project.templateId === "official-audition-candidate";
   ctx.save();
   ctx.globalAlpha = d.opacity;
   ctx.strokeStyle = d.color;
   ctx.fillStyle = d.color;
+  if (isOfficial) {
+    drawDivider(ctx, width / 2, height * 0.752, width * 0.22);
+    drawDivider(ctx, width / 2, height * 0.83, width * 0.23);
+    drawDivider(ctx, width / 2, height * 0.972, width * 0.22);
+    ctx.globalAlpha = d.opacity * 0.72;
+    drawSparkle(ctx, width * 0.258, height * 0.89, 13);
+    ctx.restore();
+    return;
+  }
   if (d.outerBorder) {
     ctx.lineWidth = 3;
     roundedRect(ctx, 40, 38, width - 80, height - 76, 10);
@@ -415,17 +437,39 @@ function drawDecorations(ctx: CanvasRenderingContext2D, project: PosterProject):
 }
 
 function drawDivider(ctx: CanvasRenderingContext2D, x: number, y: number, width: number): void {
+  const gradient = ctx.createLinearGradient(x - width / 2, y, x + width / 2, y);
+  gradient.addColorStop(0, "rgba(238,215,173,0)");
+  gradient.addColorStop(0.46, "rgba(238,215,173,0.82)");
+  gradient.addColorStop(0.54, "rgba(238,215,173,0.82)");
+  gradient.addColorStop(1, "rgba(238,215,173,0)");
   ctx.beginPath();
   ctx.moveTo(x - width / 2, y);
   ctx.lineTo(x - 18, y);
   ctx.moveTo(x + 18, y);
   ctx.lineTo(x + width / 2, y);
   ctx.lineWidth = 2;
+  ctx.strokeStyle = gradient;
   ctx.stroke();
   ctx.save();
   ctx.translate(x, y);
   ctx.rotate(Math.PI / 4);
   ctx.fillRect(-7, -7, 14, 14);
+  ctx.restore();
+}
+
+function drawSparkle(ctx: CanvasRenderingContext2D, x: number, y: number, size: number): void {
+  ctx.save();
+  ctx.translate(x, y);
+  const glow = ctx.createRadialGradient(0, 0, 1, 0, 0, size * 2);
+  glow.addColorStop(0, "rgba(255,221,126,.9)");
+  glow.addColorStop(1, "rgba(255,221,126,0)");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, size * 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#F2C34D";
+  ctx.fillRect(-size, -1, size * 2, 2);
+  ctx.fillRect(-1, -size, 2, size * 2);
   ctx.restore();
 }
 
@@ -459,6 +503,38 @@ async function drawQr(ctx: CanvasRenderingContext2D, project: PosterProject): Pr
   roundedRect(ctx, project.qr.x - project.qr.border, project.qr.y - project.qr.border, project.qr.size + project.qr.border * 2, project.qr.size + project.qr.border * 2, 10);
   ctx.fill();
   ctx.drawImage(img, project.qr.x, project.qr.y, project.qr.size, project.qr.size);
+  ctx.restore();
+}
+
+function drawPhoneBadge(ctx: CanvasRenderingContext2D, project: PosterProject): void {
+  if (project.templateId !== "official-audition-candidate") return;
+  const style = project.textStyles.phone;
+  const size = Math.max(30, project.contact.iconSize + 20);
+  const x = style.x - size - project.size.width * 0.018;
+  const y = style.y - size / 2;
+  ctx.save();
+  const bg = ctx.createLinearGradient(x, y, x + size, y + size);
+  bg.addColorStop(0, "#FFE986");
+  bg.addColorStop(0.55, "#F2C34D");
+  bg.addColorStop(1, "#A9640D");
+  roundedRect(ctx, x, y, size, size, 8);
+  ctx.fillStyle = bg;
+  ctx.shadowColor = "rgba(255,211,95,.55)";
+  ctx.shadowBlur = 10;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.strokeStyle = "#1E0900";
+  ctx.lineWidth = 3;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.arc(x + size * 0.52, y + size * 0.42, size * 0.19, -0.85, 0.85);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x + size * 0.52, y + size * 0.42, size * 0.31, -0.85, 0.85);
+  ctx.stroke();
+  ctx.fillStyle = "#1E0900";
+  roundedRect(ctx, x + size * 0.24, y + size * 0.22, size * 0.16, size * 0.48, size * 0.08);
+  ctx.fill();
   ctx.restore();
 }
 
@@ -518,8 +594,16 @@ export async function renderPosterToCanvas(canvas: HTMLCanvasElement, project: P
   if (visible(project, "candidateName")) drawText(ctx, project.textStyles.candidateName, project.candidate.fullName, 28);
   if (visible(project, "candidateCategory")) drawText(ctx, project.textStyles.candidateCategory, project.candidate.category || project.candidate.title || project.candidate.status, 18);
   if (visible(project, "sponsors")) await drawSponsorLogos(ctx, project);
-  if (visible(project, "contact")) drawText(ctx, project.textStyles.phone, phoneText(project), 14);
-  if (visible(project, "website")) drawText(ctx, project.textStyles.website, project.contact.website, 14);
+  if (visible(project, "contact")) {
+    drawPhoneBadge(ctx, project);
+    drawText(ctx, project.textStyles.phone, phoneText(project), 14);
+  }
+  if (visible(project, "website")) {
+    const website = project.templateId === "official-audition-candidate" && project.contact.website && !/^website\b/i.test(project.contact.website)
+      ? `WEBSITE ${project.contact.website}`
+      : project.contact.website;
+    drawText(ctx, project.textStyles.website, website, 14);
+  }
   if (visible(project, "footer")) drawText(ctx, project.textStyles.footer, project.event.footerNote, 12);
   if (visible(project, "qr")) await drawQr(ctx, project);
   if (options.guides) drawGuides(ctx, project);
